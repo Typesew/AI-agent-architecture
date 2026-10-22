@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ИИ-Репетитор: Архитектура проекта</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 900px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; }
+        h1, h2 { color: #2c3e50; text-align: center; }
+        .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .mermaid { text-align: center; margin: 20px 0; }
+        .analogy { background: #e8f4f8; border-left: 5px solid #3498db; padding: 15px; margin: 15px 0; border-radius: 4px; }
+        ul { padding-left: 20px; }
+        code { background: #eee; padding: 2px 5px; border-radius: 3px; font-family: monospace; }
+        pre { background: #2b2b2b; color: #f8f8f2; padding: 15px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+
+    <h1>🎓 ИИ-Репетитор по программированию</h1>
+    <p style="text-align: center;"><i>Проект команды 2 курса. Документация для чайников.</i></p>
+
+    <div class="card">
+        <h2>📌 Предметная область (О чем вообще проект?)</h2>
+        <p>Представьте, что у вас есть личный учитель, который знает <b>все ваши лекции</b>. Вы говорите ему: «Объясни тему массивов», и он не просто дает сухую теорию, а <b>создает для вас папку с файлом</b>, пишет туда задачу на Python и проверяет ваш код.</p>
+        <p><b>Что делает агент:</b></p>
+        <ul>
+            <li>Читает методички и лекции (PDF) по программированию.</li>
+            <li>Ищет в них нужную тему (RAG).</li>
+            <li>Создает структуру папок и файлов на вашем компьютере.</li>
+            <li>Запускает ваш код, ищет ошибки и дает советы (MCP).</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>🏗 Архитектура системы</h2>
+        <p>Схема того, как всё работает под капотом.</p>
+        
+        <div class="mermaid">
+            graph TD
+                User([Студент]) -->|Пишет запрос| UI[Интерфейс: Streamlit]
+                UI -->|Передает запрос| Agent[Оркестратор агента: LangChain/LlamaIndex]
+                
+                Agent -->|1. Ищет контекст| RAG[RAG Поиск]
+                RAG -->|Ищет в базе| VectorDB[(Векторная БД: ChromaDB<br/>Лекции в виде векторов)]
+                RAG -->|Возвращает найденный текст| Agent
+                
+                Agent -->|2. Принимает решение| LLM[Мозг: LLM Qwen2.5<br/>через Ollama]
+                
+                LLM -->|3. Решает вызвать инструмент| MCP[MCP Клиент]
+                MCP -->|Команда создать файл/запустить код| Tools[Сервер инструментов: FastMCP]
+                Tools -->|Создает папку и файлы| FileSystem[Файловая система]
+                Tools -->|Запускает Python код| Terminal[Терминал / Проверка]
+                
+                Terminal -->|Результат проверки| Tools
+                Tools -->|Отчет об ошибках| MCP
+                MCP -->|Возвращает отчет| LLM
+                LLM -->|Формирует ответ| UI
+        </div>
+
+        <div class="analogy">
+            <b>Аналогия для команды:</b><br>
+            <b>LLM (Ollama)</b> — это Мозг. Он умный, но ничего не знает про ваши лекции и не умеет нажимать кнопки на клавиатуре.<br>
+            <b>RAG (ChromaDB)</b> — это Библиотекарь. По вашей просьбе приносит нужные страницы из ваших лекций.<br>
+            <b>MCP (Model Context Protocol)</b> — это Руки. Специальный стандарт, который позволяет Мозгу сказать: «Создай файл» или «Запусти скрипт», и Руки это выполняют.
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>📂 Структура проекта</h2>
+        <p>Как разложены файлы в репозитории (чтобы никто не запутался).</p>
+        <pre>
+project_root/
+│
+├── data/                 # Сюда кидаем PDF-лекции
+├── db/                   # Здесь ChromaDB хранит векторы лекций (создается автоматически)
+├── src/
+│   ├── __init__.py
+│   ├── config.py         # Настройки (пути, названия моделей)
+│   ├── rag.py            # Логика разбиения PDF, создания эмбеддингов и поиска
+│   ├── agent.py          # Главный "мозг" (настройка LlamaIndex/LangChain)
+│   ├── mcp_server.py     # Сервер инструментов (создание файлов, запуск кода)
+│   └── mcp_client.py     # Код подключения агента к MCP-серверу
+├── ui/
+│   └── app.py            # Интерфейс Streamlit (чат)
+├── .gitignore            # Чтобы не коммитить мусор (db/, __pycache__)
+├── requirements.txt      # Список библиотек
+└── README.md             # Инструкция по запуску
+        </pre>
+    </div>
+
+    <div class="card">
+        <h2>🛠 Слои и инструменты</h2>
+        <p>Что мы используем на каждом уровне:</p>
+        <ul>
+            <li><b>Слой интерфейса (UI):</b> <code>Streamlit</code>. Просто пишем Python-код, а получаем красивый сайт-чат.</li>
+            <li><b>Слой оркестрации:</b> <code>LangChain</code> или <code>LlamaIndex</code>. Соединяют Мозг (LLM), Библиотеку (RAG) и Руки (MCP).</li>
+            <li><b>Слой памяти (RAG):</b> <code>ChromaDB</code> (хранение) + <code>PyPDF2</code> (чтение PDF) + <code>sentence-transformers</code> (перевод текста в цифры).</li>
+            <li><b>Слой инструментов (MCP):</b> <code>fastmcp</code>. Библиотека, которая позволяет легко описать функции (создать_файл, запустить_код) для агента.</li>
+            <li><b>Модель (LLM):</b> <code>Ollama</code> + <code>Qwen2.5-Coder:7b</code>. Работает локально, кушает 8 ГБ видеопамяти.</li>
+        </ul>
+    </div>
+
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</body>
+</html>
